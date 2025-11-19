@@ -31,7 +31,4 @@ or
 
 ---
 
-##  Project Structure
-
-This project is intentionally simple:
-
+A companion mobile app is currently planned to extend this simulator into a hands-on warehouse operations experience. Through the app, students will be able to scan items, view real-time process routing, and observe exactly how products move through each fulfillment stage — from Inbound → Stow → Picking → Packing → Ship Dock. The goal is to provide an authentic, interactive workflow where learners can see how correct scanning, bin assignment, and task sequencing determine the path an item takes inside a fulfillment center. This app will help students experience how large-scale systems ensure speed, accuracy, and proper routing throughout Amazon-style operational flows.
