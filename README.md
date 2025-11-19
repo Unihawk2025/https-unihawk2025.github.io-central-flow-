@@ -8,11 +8,7 @@ This project is designed for high school students as part of a Winter Camp works
 ---
 
 ##  Live Demo  
-*(Add your Vercel or GitHub Pages link here)*  
-Example:  
-`https://yourusername.github.io/central-flow-sim/`  
-or  
-`https://central-flow-sim.vercel.app`
+An app where students can each log in.
 
 ---
 
