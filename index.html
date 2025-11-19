@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini Amazon Central Flow Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.12);
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #ef4444;
+      --warning: #f97316;
+      --radius-lg: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1, h2, h3 {
+      font-weight: 600;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .title-block h1 {
+      font-size: 1.7rem;
+      letter-spacing: 0.02em;
+    }
+
+    .title-block p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .tagline {
+      background: #020617;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tagline-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+    }
+
+    .reset-btn {
+      background: transparent;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: var(--muted);
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .reset-btn:hover {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      border-color: rgba(148, 163, 184, 0.8);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 3fr 2.2fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* FLOW PIPELINE */
+    .pipeline-card {
+      background: linear-gradient(135deg, #020617 0, #020617 40%, #111827 100%);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 16px 16px 12px;
+      margin-bottom: 16px;
+    }
+
+    .pipeline-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .pipeline-title {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      color: var(--muted);
+    }
+
+    .pipeline-flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .stage {
+      position: relative;
+      background: radial-gradient(circle at top, #020617 0, #020617 40%, #020617 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(75, 85, 99, 0.7);
+      padding: 10px 8px;
+      font-size: 0.75rem;
+    }
+
+    .stage.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35),
+        0 0 24px rgba(34, 197, 94, 0.2);
+      background: radial-gradient(circle at top, var(--accent-soft) 0, #020617 55%);
+    }
+
+    .stage-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .stage-name {
+      font-size: 0.8rem;
+    }
+
+    .stage-count {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .stage-arrow {
+      position: absolute;
+      right: -9px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem;
+      color: rgba(148, 163, 184, 0.5);
+    }
+
+    .stage:last-child .stage-arrow {
+      display: none;
+    }
+
+    /* CARDS */
+    .card {
+      background: radial-gradient(circle at top left, #111827 0, #020617 100%);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 14px 14px 10px;
+      margin-bottom: 12px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--muted);
+    }
+
+    .badge-green {
+      border-color: rgba(34, 197, 94, 0.7);
+      color: var(--accent);
+    }
+
+    /* FORMS & BUTTONS */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1.2fr 0.8fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .form-row-single {
+      display: grid;
+      grid-template-columns: 1.4fr 0.6fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    input, select {
+      width: 100%;
+      background: #020617;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #022c22;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.35);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(75, 85, 99, 0.8);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+    }
+
+    .btn-small {
+      font-size: 0.75rem;
+      padding: 4px 9px;
+    }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+    }
+
+    .btn-danger:hover {
+      background: rgba(127, 29, 29, 0.6);
+    }
+
+    /* TABLES */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+
+    th, td {
+      padding: 6px 4px;
+      text-align: left;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      border: 1px solid rgba(75, 85, 99, 0.8);
+      display: inline-block;
+    }
+
+    .status-created { border-color: rgba(129, 140, 248, 0.7); color: #a5b4fc; }
+    .status-picking { border-color: rgba(96, 165, 250, 0.7); color: #bfdbfe; }
+    .status-picked { border-color: rgba(45, 212, 191, 0.7); color: #a5f3fc; }
+    .status-packed { border-color: rgba(251, 191, 36, 0.7); color: #facc15; }
+    .status-shipped { border-color: rgba(34, 197, 94, 0.7); color: #bbf7d0; }
+
+    /* TIMELINE */
+    .timeline {
+      max-height: 210px;
+      overflow-y: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      margin-top: 6px;
+    }
+
+    .event {
+      font-size: 0.74rem;
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(31, 41, 55, 0.8);
+    }
+
+    .event:last-child {
+      border-bottom: none;
+    }
+
+    .event-time {
+      color: var(--muted);
+      margin-right: 4px;
+      font-size: 0.7rem;
+    }
+
+    .event-highlight {
+      color: var(--accent);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .warning {
+      color: var(--warning);
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+
+    .danger {
+      color: var(--danger);
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="title-block">
+        <div class="tagline">
+          <span class="tagline-dot"></span>
+          Mini Amazon Central Flow • Teaching Simulator
+        </div>
+        <h1>From Inbound to Outbound</h1>
+        <p>Use this with your students to visualise how products move through a fulfilment centre:
+          <strong>Inbound → Storage → Picking → Packing → Outbound.</strong>
+        </p>
+      </div>
+      <button class="reset-btn" id="resetBtn">
+        ⟳ Reset simulation
+      </button>
+    </header>
+
+    <!-- FLOW PIPELINE SUMMARY -->
+    <section class="pipeline-card">
+      <div class="pipeline-head">
+        <div>
+          <div class="pipeline-title">Live Flow Overview</div>
+          <div class="card-subtitle">
+            Track how many active orders are sitting at each step of the central flow.
+          </div>
+        </div>
+      </div>
+
+      <div class="pipeline-flow" id="pipelineFlow">
+        <!-- Filled by JS -->
+      </div>
+    </section>
+
+    <main class="layout">
+      <!-- LEFT SIDE: CONTROLS + TABLES -->
+      <section>
+        <!-- INBOUND -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Inbound: Receive Inventory</h2>
+              <p class="card-subtitle">Simulate product arriving at the fulfilment centre.</p>
+            </div>
+            <span class="badge badge-green">Step 1 • Inbound</span>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="skuSelect">Product</label>
+              <select id="skuSelect">
+                <!-- Filled by JS -->
+              </select>
+            </div>
+            <div>
+              <label for="inboundQty">Quantity</label>
+              <input type="number" id="inboundQty" min="1" step="1" value="10" />
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn btn-primary" id="receiveBtn">
+                Receive &amp; stow
+              </button>
+            </div>
+          </div>
+          <p class="warning">Teaching prompt: Ask students what happens in real life
+            when a truck arrives at an Amazon FC.</p>
+        </div>
+
+        <!-- ORDERS -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Customer Orders</h2>
+              <p class="card-subtitle">Create an order and push it through each warehouse step.</p>
+            </div>
+            <span class="badge">Steps 2–5 • Storage → Outbound</span>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="orderSkuSelect">Product</label>
+              <select id="orderSkuSelect">
+                <!-- Filled by JS -->
+              </select>
+            </div>
+            <div>
+              <label for="orderQty">Order quantity</label>
+              <input type="number" id="orderQty" min="1" step="1" value="2" />
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button class="btn btn-primary" id="createOrderBtn">
+                Create order
+              </button>
+            </div>
+          </div>
+
+          <div class="form-row-single">
+            <div>
+              <label for="orderSelect">Select order to progress</label>
+              <select id="orderSelect">
+                <!-- Filled by JS -->
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-small" id="progressOrderBtn">
+                Advance to next step →
+              </button>
+              <button class="btn btn-danger btn-small" id="cancelOrderBtn">
+                Cancel
+              </button>
+            </div>
+          </div>
+          <p class="warning">Teaching prompt: Map each order status to a physical area inside the
+            fulfilment centre.</p>
+        </div>
+
+        <!-- INVENTORY TABLE -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Inventory · Storage area</h2>
+              <p class="card-subtitle">How many units are ready to be picked?</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Product</th>
+                <th class="text-right">On hand</th>
+                <th class="text-right">Reserved</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryBody">
+              <!-- Filled by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ORDERS TABLE -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Orders in the Flow</h2>
+              <p class="card-subtitle">Track where each order is in the central flow.</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>SKU</th>
+                <th>Qty</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody">
+              <!-- Filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RIGHT SIDE: TIMELINE + NOTES -->
+      <section>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Event Timeline</h2>
+              <p class="card-subtitle">Every action is logged so students can narrate the flow.</p>
+            </div>
+          </div>
+          <div class="timeline" id="timeline">
+            <!-- Events injected here -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Teaching Ideas</h2>
+              <p class="card-subtitle">Use these prompts to guide discussion.</p>
+            </div>
+          </div>
+          <ul style="font-size:0.78rem; color:var(--muted); padding-left:16px; line-height:1.5;">
+            <li>Ask students to describe what <strong>inbound</strong>, <strong>storage</strong>,
+              <strong>picking</strong>, <strong>packing</strong>, and <strong>outbound</strong>
+              look like in real life.</li>
+            <li>Create multiple orders and see what happens when there is not enough inventory –
+              what would Amazon’s systems do?</li>
+            <li>Assign roles: one student controls inbound, another controls orders, another narrates
+              the timeline.</li>
+            <li>Challenge: minimise “on hand” inventory while still fulfilling all orders.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ==========================
+    // SIMPLE DATA MODEL
+    // ==========================
+
+    const products = [
+      { sku: "BOOK-001", name: "Data Analytics Workbook" },
+      { sku: "HEAD-002", name: "Wireless Headphones" },
+      { sku: "MUG-003", name: "Unihawk Coffee Mug" },
+    ];
+
+    let inventory = {}; // { sku: { onHand, reserved } }
+    let orders = [];    // { id, sku, qty, status }
+    let orderCounter = 1;
+    const timelineEl = document.getElementById("timeline");
+
+    const STATUS_ORDER = ["created", "picking", "picked", "packed", "shipped"];
+
+    // ==========================
+    // INITIAL SETUP
+    // ==========================
+
+    function initInventory() {
+      inventory = {};
+      products.forEach(p => {
+        inventory[p.sku] = { onHand: 0, reserved: 0 };
+      });
+    }
+
+    function populateProductSelects() {
+      const skuSelect = document.getElementById("skuSelect");
+      const orderSkuSelect = document.getElementById("orderSkuSelect");
+      skuSelect.innerHTML = "";
+      orderSkuSelect.innerHTML = "";
+
+      products.forEach(p => {
+        const opt1 = document.createElement("option");
+        opt1.value = p.sku;
+        opt1.textContent = `${p.sku} – ${p.name}`;
+        skuSelect.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = p.sku;
+        opt2.textContent = `${p.sku} – ${p.name}`;
+        orderSkuSelect.appendChild(opt2);
+      });
+    }
+
+    function resetSimulation() {
+      initInventory();
+      orders = [];
+      orderCounter = 1;
+      timelineEl.innerHTML = "";
+      logEvent("Simulation reset.", "muted");
+      renderAll();
+    }
+
+    // ==========================
+    // RENDER FUNCTIONS
+    // ==========================
+
+    function renderInventoryTable() {
+      const tbody = document.getElementById("inventoryBody");
+      tbody.innerHTML = "";
+      products.forEach(p => {
+        const inv = inventory[p.sku];
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.sku}</td>
+          <td>${p.name}</td>
+          <td class="text-right">${inv.onHand}</td>
+          <td class="text-right">${inv.reserved}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function statusClass(status) {
+      switch (status) {
+        case "created": return "status-created";
+        case "picking": return "status-picking";
+        case "picked": return "status-picked";
+        case "packed": return "status-packed";
+        case "shipped": return "status-shipped";
+        default: return "";
+      }
+    }
+
+    function statusLabel(status) {
+      const map = {
+        created: "Created (Storage)",
+        picking: "Picking",
+        picked: "Picked",
+        packed: "Packed",
+        shipped: "Shipped (Outbound)",
+      };
+      return map[status] || status;
+    }
+
+    function renderOrdersTable() {
+      const tbody = document.getElementById("ordersBody");
+      tbody.innerHTML = "";
+      orders.forEach(o => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>#${o.id}</td>
+          <td>${o.sku}</td>
+          <td>${o.qty}</td>
+          <td><span class="status-pill ${statusClass(o.status)}">
+            ${statusLabel(o.status)}
+          </span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      renderOrderSelect();
+      renderPipelineSummary();
+    }
+
+    function renderOrderSelect() {
+      const select = document.getElementById("orderSelect");
+      select.innerHTML = "";
+      if (orders.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No orders yet";
+        select.appendChild(opt);
+        return;
+      }
+
+      orders.forEach(o => {
+        const p = products.find(x => x.sku === o.sku);
+        const opt = document.createElement("option");
+        opt.value = o.id;
+        opt.textContent = `#${o.id} • ${p ? p.name : o.sku} • ${statusLabel(o.status)}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderPipelineSummary() {
+      const container = document.getElementById("pipelineFlow");
+      container.innerHTML = "";
+
+      const counts = {
+        created: 0,
+        picking: 0,
+        picked: 0,
+        packed: 0,
+        shipped: 0,
+      };
+
+      orders.forEach(o => {
+        if (counts[o.status] !== undefined) counts[o.status]++;
+      });
+
+      const stages = [
+        { key: "created", label: "Storage", name: "Order Created" },
+        { key: "picking", label: "Picking", name: "Picking Items" },
+        { key: "picked", label: "Picked", name: "Ready for Pack" },
+        { key: "packed", label: "Packing", name: "Packed Order" },
+        { key: "shipped", label: "Outbound", name: "Shipped" },
+      ];
+
+      stages.forEach((s, index) => {
+        const div = document.createElement("div");
+        const isActive = counts[s.key] > 0;
+        div.className = "stage" + (isActive ? " active" : "");
+        div.innerHTML = `
+          <div class="stage-label">${s.label}</div>
+          <div class="stage-name">${s.name}</div>
+          <div class="stage-count">${counts[s.key]} orders</div>
+          <div class="stage-arrow">➜</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderAll() {
+      renderInventoryTable();
+      renderOrdersTable();
+    }
+
+    // ==========================
+    // TIMELINE
+    // ==========================
+
+    function logEvent(message, tone = "normal") {
+      const time = new Date();
+      const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const div = document.createElement("div");
+      div.className = "event";
+      div.innerHTML = `<span class="event-time">[${timeStr}]</span>
+        <span class="${tone === "highlight" ? "event-highlight" : tone === "danger" ? "danger" : tone === "muted" ? "muted" : ""}">
+          ${message}
+        </span>`;
+      timelineEl.prepend(div);
+    }
+
+    // ==========================
+    // ACTION HANDLERS
+    // ==========================
+
+    function handleReceive() {
+      const sku = document.getElementById("skuSelect").value;
+      const qtyInput = document.getElementById("inboundQty");
+      const qty = parseInt(qtyInput.value, 10);
+
+      if (!sku || isNaN(qty) || qty <= 0) {
+        alert("Enter a valid quantity.");
+        return;
+      }
+
+      inventory[sku].onHand += qty;
+      const product = products.find(p => p.sku === sku);
+      logEvent(`Inbound: Received and stowed ${qty} units of ${product ? product.name : sku} into storage.`, "highlight");
+      renderAll();
+    }
+
+    function handleCreateOrder() {
+      const sku = document.getElementById("orderSkuSelect").value;
+      const qty = parseInt(document.getElementById("orderQty").value, 10);
+
+      if (!sku || isNaN(qty) || qty <= 0) {
+        alert("Enter a valid order quantity.");
+        return;
+      }
+
+      const available = inventory[sku].onHand - inventory[sku].reserved;
+      if (qty > available) {
+        logEvent(`Order could not be created: requested ${qty} units but only ${available} available in storage.`, "danger");
+        alert("Not enough inventory to reserve for this order.");
+        return;
+      }
+
+      const order = {
+        id: orderCounter++,
+        sku,
+        qty,
+        status: "created",
+      };
+
+      inventory[sku].reserved += qty;
+      orders.push(order);
+      const product = products.find(p => p.sku === sku);
+      logEvent(`Order #${order.id} created for ${qty} units of ${product ? product.name : sku}. Inventory reserved.`, "highlight");
+      renderAll();
+    }
+
+    function handleProgressOrder() {
+      if (orders.length === 0) return;
+
+      const select = document.getElementById("orderSelect");
+      const id = parseInt(select.value, 10);
+      const order = orders.find(o => o.id === id);
+      if (!order) return;
+
+      const currentIndex = STATUS_ORDER.indexOf(order.status);
+      if (currentIndex === -1 || currentIndex === STATUS_ORDER.length - 1) {
+        logEvent(`Order #${order.id} is already at final status (${statusLabel(order.status)}).`, "muted");
+        return;
+      }
+
+      const nextStatus = STATUS_ORDER[currentIndex + 1];
+
+      if (order.status === "created" && nextStatus === "picking") {
+        logEvent(`Order #${order.id} moved to Picking area.`, "highlight");
+      } else if (order.status === "picking" && nextStatus === "picked") {
+        const inv = inventory[order.sku];
+        if (inv.onHand < order.qty) {
+          logEvent(`Picking failed for order #${order.id}: not enough inventory on shelves.`, "danger");
+          alert("Not enough inventory on hand to pick this order.");
+          return;
+        }
+        inv.onHand -= order.qty;
+        logEvent(`Order #${order.id} picked from storage. ${order.qty} units removed from on-hand inventory.`, "highlight");
+      } else if (order.status === "picked" && nextStatus === "packed") {
+        logEvent(`Order #${order.id} packed in the packing station.`, "highlight");
+      } else if (order.status === "packed" && nextStatus === "shipped") {
+        const inv = inventory[order.sku];
+        inv.reserved -= order.qty;
+        logEvent(`Order #${order.id} shipped to customer. Inventory reservation released.`, "highlight");
+      }
+
+      order.status = nextStatus;
+      renderAll();
+    }
+
+    function handleCancelOrder() {
+      if (orders.length === 0) return;
+      const select = document.getElementById("orderSelect");
+      const id = parseInt(select.value, 10);
+      const idx = orders.findIndex(o => o.id === id);
+      if (idx === -1) return;
+
+      const order = orders[idx];
+
+      // Return reserved inventory only if not shipped yet
+      if (order.status !== "shipped") {
+        inventory[order.sku].reserved -= order.qty;
+        logEvent(`Order #${order.id} was cancelled. Reserved inventory released.`, "danger");
+      } else {
+        logEvent(`Order #${order.id} cancellation requested, but it has already shipped.`, "muted");
+      }
+
+      orders.splice(idx, 1);
+      renderAll();
+    }
+
+    // ==========================
+    // EVENT LISTENERS
+    // ==========================
+
+    document.getElementById("receiveBtn").addEventListener("click", handleReceive);
+    document.getElementById("createOrderBtn").addEventListener("click", handleCreateOrder);
+    document.getElementById("progressOrderBtn").addEventListener("click", handleProgressOrder);
+    document.getElementById("cancelOrderBtn").addEventListener("click", handleCancelOrder);
+    document.getElementById("resetBtn").addEventListener("click", resetSimulation);
+
+    // ==========================
+    // BOOTSTRAP
+    // ==========================
+
+    (function bootstrap() {
+      populateProductSelects();
+      resetSimulation();
+      logEvent("Welcome! Start by receiving inventory, then create an order and push it through the flow.", "highlight");
+    })();
+  </script>
+</body>
+</html>
